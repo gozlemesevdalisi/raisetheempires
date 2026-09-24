@@ -1846,6 +1846,11 @@ def perform_world_response(params):
     # print("next_click_state:", repr(next_click_state))
     meta = {"newPVE": 0}
     print(step)
+    if step in ["setState", "clear", "move", "speedUp", "add", "list", "remove", "staffPosition"] and \
+            not any(e['id'] == id for e in session['user_object']["userInfo"]["world"]["objects"]):
+        # client can refer to an object that is already gone (e.g. double click); don't crash the request
+        print("WARNING: Object", id, "not found for", step + ". Ignoring.")
+        return {"errorType": 0, "userId": 1, "metadata": meta, "data": {"id": id}}
     if step in ["place", "setState"]:
         click_next_state(True, id, meta, step, reference_item, cancel=cancel)  # place & setstate only
 
@@ -2449,7 +2454,11 @@ def buy_item(meta, code, amount):
         # param["useCash"]
         item_inventory = session['user_object']["userInfo"]["player"]["inventory"]["items"]
         item_inventory[code] = item_inventory.get(code, 0) + 1
-    player['cash'] -= get_cash_cost(item, amount)
+    costs = item.get("cost", {})
+    if "-cash" in costs:
+        player['cash'] -= get_cash_cost(item, amount)
+    else:  # e.g. rare resources bought with coins (RS11-RS15)
+        do_costs({k: str(int(v.split('|')[0]) * amount) for k, v in costs.items()})
     handle_quest_progress(meta, progress_buy_consumable(item))
 
 

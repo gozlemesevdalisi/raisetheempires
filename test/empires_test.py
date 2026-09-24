@@ -1,4 +1,5 @@
 import json
+import types
 
 import pytest
 from flask import Flask, session, request
@@ -337,6 +338,38 @@ def test_init_user(monkeypatch):
             expected_json = json.load(f)
             expected_json["neighbors"].sort(key=lambda x: x["uid"])
             assert user == expected_json
+
+
+def test_buy_item_with_coins():
+    with app.test_request_context():
+        with open(TEST_DIR / 'init_user.json', 'r') as f:
+            session['user_object'] = json.load(f)
+        session['quests'] = []
+        player = session['user_object']["userInfo"]["player"]
+        resources = session['user_object']["userInfo"]["world"]["resources"]
+        player["lastEnergyCheck"] = 0
+        resources["coins"] = 10000
+        cash = player["cash"]
+        aluminum = resources["aluminum"]
+
+        empires_server.buy_item({"newPVE": 0}, "RS11", 1)  # resource01a: 10 aluminum for 4000 coins
+
+        assert resources["coins"] == 6000
+        assert resources["aluminum"] == aluminum + 10
+        assert player["cash"] == cash
+
+
+def test_perform_world_response_missing_object():
+    with app.test_request_context():
+        with open(TEST_DIR / 'init_user.json', 'r') as f:
+            session['user_object'] = json.load(f)
+        objects = session['user_object']["userInfo"]["world"]["objects"]
+        missing_id = max([e['id'] for e in objects], default=0) + 1
+        world_object = types.SimpleNamespace(id=missing_id, position="0,0,0", itemName="Market")
+
+        res = empires_server.perform_world_response(["list", world_object, []])
+
+        assert res == {"errorType": 0, "userId": 1, "metadata": {"newPVE": 0}, "data": {"id": missing_id}}
 
 
 # def test_index():
