@@ -359,6 +359,12 @@ def test_buy_item_with_coins():
         assert player["cash"] == cash
 
 
+def test_send_from_directory_mod_serves_mod(monkeypatch):
+    monkeypatch.setitem(empires_server.mod_engine.mod, "assets/29oct2012/en_US.xml", lambda: b"modded")
+    with app.test_request_context():
+        assert empires_server.send_from_directory_mod("assets/29oct2012", "en_US.xml") == b"modded"
+
+
 def test_perform_world_response_missing_object():
     with app.test_request_context():
         with open(TEST_DIR / 'init_user.json', 'r') as f:

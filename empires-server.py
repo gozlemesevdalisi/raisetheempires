@@ -1,5 +1,6 @@
 import os
 import webbrowser
+from pathlib import Path
 
 import msgspec
 from flask_session.base import MsgSpecSerializer
@@ -735,8 +736,9 @@ def send_from_directory_mod(directory, filename, **options):
     absolute_directory = os.path.join(install_path(), directory)
     path = safe_join(os.fspath(absolute_directory), os.fspath(filename))
     print(path)
+    mod_path = Path(directory, filename).as_posix()  # mods are keyed relative to the install folder
 
-    return mod_engine.mod.get(path)() if path in mod_engine.mod else send_from_directory(absolute_directory, filename, **options)
+    return mod_engine.mod.get(mod_path)() if mod_path in mod_engine.mod else send_from_directory(absolute_directory, filename, **options)
 
 
 @app.route('/files/empire-s.assets.zgncdn.com/assets/109338/127.0.0.1flashservices/gateway.php', methods=['POST'])
