@@ -109,3 +109,36 @@
 | Elite / Spec Ops | Elit / Özel Harekât |
 | Direct hit / Critical hit / Glancing hit | Tam isabet / Kritik vuruş / Sıyırma |
 | Strength / Damage | Güç / Hasar |
+
+## Özel binalar
+| İngilizce | Türkçe |
+|---|---|
+| Intelligence Bureau | İstihbarat Bürosu |
+| Turkmen Assembly | Türkmen Meclisi |
+| Cyber Warfare Facility | Siber Savaş Tesisi |
+| Amity Naval Station / Lighthouse | Amity Deniz Üssü / Deniz Feneri |
+| Grand Citadel | Büyük Kale |
+| Missile Launch Station | Füze Fırlatma İstasyonu |
+| Capsule Suites | Kapsül Süitler |
+| Element Z Collider / Refinery / Regenerator | Element Z Çarpıştırıcısı / Rafinerisi / Yenileyicisi |
+| Energy Cradle | Enerji Beşiği |
+| Heavenly Ruler's Palace | Göksel Hükümdar Sarayı |
+| Drone Command Center | İHA Komuta Merkezi |
+| Commando Assault Yard | Komando Hücum Sahası |
+| Espionage HQ / Strike Team HQ | Casusluk Karargâhı / Vurucu Tim Karargâhı |
+| Bounty Center | Ödül Avcısı Merkezi |
+| Dog Park | Köpek Parkı |
+| Lucky Shot Raffle | Şans Atışı Çekilişi |
+
+## Güçlendiriciler
+| İngilizce | Türkçe |
+|---|---|
+| Air Strike | Hava Saldırısı |
+| Missile Attack | Füze Saldırısı |
+| Target Jammer | Hedef Karıştırıcı |
+| Explosive Ammo | Patlayıcı Mühimmat |
+| Poison Gas | Zehirli Gaz |
+| Acid Blast | Asit Patlaması |
+| Field Repair | Saha Onarımı |
+| EMP | EMP |
+| Nuke | Nükleer Bomba |
