@@ -38,6 +38,7 @@ try:
 except ImportError:
     from werkzeug.utils import safe_join
 from flask_session import Session
+from flask.sessions import SessionInterface, SecureCookieSession
 from pyamf import remoting
 import pyamf
 
@@ -80,6 +81,30 @@ rand_seed_z = 844
 
 compress = Compress() if settings.compression else None
 sess = Session()
+
+# Requests for static game assets never use the save game, but a server side session is loaded from and
+# written back to the database on every request. With a save of several MB that makes each image/swf
+# request take up to a second and they queue up behind each other.
+ASSET_PATH_PREFIXES = ("/img/", "/js/", "/css/", "/nullassets/", "/assets/", "/127.0.0.1", "/gameSettings.xml",
+                       "/changelog.txt", "/favicon.ico", "/files/empire-s.assets.zgncdn.com/assets/109338/ZGame")
+
+
+class AssetSkippingSessionInterface(SessionInterface):
+    def __init__(self, inner):
+        self.inner = inner
+
+    def __getattr__(self, name):
+        return getattr(self.inner, name)
+
+    def open_session(self, app, request):
+        if request.path.startswith(ASSET_PATH_PREFIXES):
+            return SecureCookieSession()
+        return self.inner.open_session(app, request)
+
+    def save_session(self, app, session, response):
+        if request.path.startswith(ASSET_PATH_PREFIXES):
+            return
+        self.inner.save_session(app, session, response)
 
 
 start = datetime.now()
@@ -2856,6 +2881,7 @@ if __name__ == '__main__':
     socketio.init_app(app)
     db.init_app(app)
     sess.init_app(app)
+    app.session_interface = AssetSkippingSessionInterface(app.session_interface)
     # session.app.session_interface.db.create_all()
     # app.session_interface.db.create_all()
     # db.create_all()

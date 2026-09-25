@@ -365,6 +365,27 @@ def test_send_from_directory_mod_serves_mod(monkeypatch):
         assert empires_server.send_from_directory_mod("assets/29oct2012", "en_US.xml") == b"modded"
 
 
+def test_asset_requests_skip_server_side_session():
+    class Inner:
+        opened = saved = 0
+
+        def open_session(self, app, request):
+            Inner.opened += 1
+            return {"user_object": "big save"}
+
+        def save_session(self, app, session, response):
+            Inner.saved += 1
+
+    interface = empires_server.AssetSkippingSessionInterface(Inner())
+    for path, expected in (("/img/xp.png", 0), ("/nullassets/game/units/Units_Land.swf", 0),
+                           ("/files/empire-s.assets.zgncdn.com/assets/109338/127.0.0.1flashservices/gateway.php", 1)):
+        Inner.opened = Inner.saved = 0
+        with app.test_request_context(path):
+            session = interface.open_session(app, request)
+            interface.save_session(app, session, None)
+        assert (Inner.opened, Inner.saved) == (expected, expected), path
+
+
 def test_perform_world_response_missing_object():
     with app.test_request_context():
         with open(TEST_DIR / 'init_user.json', 'r') as f:
