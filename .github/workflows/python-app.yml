@@ -259,10 +259,12 @@ jobs:
           echo "TAG_SEMANTIC_RELEASE=$TAG_SEMANTIC_RELEASE" >> $GITHUB_ENV
 
       - name: Do release checks
-        if: env.TAG_SEMANTIC_RELEASE == true
+        if: env.TAG_SEMANTIC_RELEASE == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           VERSION=$(grep "version =" empires-server.py  | sed -E 's/^.*\"(.*)\".*$/\1/')
-          if [ -z "$VERSION"]; then
+          if [ -z "$VERSION" ]; then
             echo No version found in empires-server.py
             echo Fix your error, remove the tag on this commit and retag the new commit with the release number
             exit 1
@@ -341,7 +343,7 @@ jobs:
 
 
       - name: Delete existing nightly release
-        if: github.event_name == 'push' && (env.BRANCH == 'main' || env.BRANCH == 'master') && env.TAG_SEMANTIC_RELEASE != true
+        if: github.event_name == 'push' && (env.BRANCH == 'main' || env.BRANCH == 'master') && env.TAG_SEMANTIC_RELEASE != 'true'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
@@ -349,7 +351,7 @@ jobs:
           
 
       - name: Delete existing preview branch release
-        if: github.event_name == 'push' && (env.BRANCH != 'main' && env.BRANCH != 'master') && env.TAG_SEMANTIC_RELEASE != true
+        if: github.event_name == 'push' && (env.BRANCH != 'main' && env.BRANCH != 'master') && env.TAG_SEMANTIC_RELEASE != 'true'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
@@ -358,14 +360,14 @@ jobs:
           
 
       - name: Update nightly tag (main only)
-        if:  github.event_name == 'push' && (env.BRANCH == 'main' || env.BRANCH == 'master') && env.TAG_SEMANTIC_RELEASE != true
+        if:  github.event_name == 'push' && (env.BRANCH == 'main' || env.BRANCH == 'master') && env.TAG_SEMANTIC_RELEASE != 'true'
         run: |
           git tag -f nightly
           git push origin nightly --force
       
 
       - name: Update preview tag
-        if:  github.event_name == 'push' && (env.BRANCH != 'main' && env.BRANCH != 'master') && env.TAG_SEMANTIC_RELEASE != true
+        if:  github.event_name == 'push' && (env.BRANCH != 'main' && env.BRANCH != 'master') && env.TAG_SEMANTIC_RELEASE != 'true'
         run: |
           PREVIEW_TAG="preview-${BRANCH}"
           echo "PREVIEW_TAG=$PREVIEW_TAG" >> $GITHUB_ENV
@@ -374,9 +376,9 @@ jobs:
 
 
       - name: Create full release notes
-        if:  github.event_name == 'push' && (env.BRANCH == 'main' || env.BRANCH == 'master') && env.TAG_SEMANTIC_RELEASE == true
+        if:  github.event_name == 'push' && (env.BRANCH == 'main' || env.BRANCH == 'master') && env.TAG_SEMANTIC_RELEASE == 'true'
         run: |
-          PREV_TAG=$(git tag --list '[0-9].[0-9][0-9]*' -q-sort=-version:refname | head -n 1)
+          PREV_TAG=$(git tag --list '[0-9].[0-9][0-9]*' --sort=-version:refname | head -n 1)
           VERSION=$(grep "version =" empires-server.py  | sed -E 's/^.*\"(.*)\".*$/\1/')
           CHANGES=$(git log "$PREV_TAG"..HEAD \
             --no-merges \
@@ -401,7 +403,7 @@ jobs:
             }
             ' build-tools/.release-notes-tmp.md > build-tools/.release-notes-tmp2.md 
           
-          gawk -v snippet="SNIPPET" '
+          gawk -v snippet="$SNIPPET" '
             BEGIN {
               gsub(/&/, "\\\\&", snippet)
             }
@@ -414,7 +416,7 @@ jobs:
           rm build-tools/.release-notes-tmp2.md
 
       - name: Create nightly release notes
-        if:  github.event_name == 'push' && (env.BRANCH == 'main' || env.BRANCH == 'master')  && env.TAG_SEMANTIC_RELEASE != true
+        if:  github.event_name == 'push' && (env.BRANCH == 'main' || env.BRANCH == 'master')  && env.TAG_SEMANTIC_RELEASE != 'true'
         run: |
           PREV_TAG=$(git tag --list '[0-9].[0-9][0-9]*' --sort=-version:refname | head -n 1)
           VERSION=$(grep "version =" empires-server.py  | sed -E 's/^.*\"(.*)\".*$/\1/')
@@ -448,7 +450,7 @@ jobs:
 
 
       - name: Create preview branch release notes
-        if:  github.event_name == 'push' && (env.BRANCH != 'main' && env.BRANCH != 'master')  && env.TAG_SEMANTIC_RELEASE != true
+        if:  github.event_name == 'push' && (env.BRANCH != 'main' && env.BRANCH != 'master')  && env.TAG_SEMANTIC_RELEASE != 'true'
         run: |
           PREV_TAG=$(git tag --list '[0-9].[0-9][0-9]*' --sort=-version:refname | head -n 1)
           VERSION=$(grep "version =" empires-server.py  | sed -E 's/^.*\"(.*)\".*$/\1/')
@@ -483,17 +485,17 @@ jobs:
               
 
       - name: Create full release draft
-        if: github.event_name == 'push' && (env.BRANCH == 'main' || env.BRANCH == 'master') && env.TAG_SEMANTIC_RELEASE == true
+        if: github.event_name == 'push' && (env.BRANCH == 'main' || env.BRANCH == 'master') && env.TAG_SEMANTIC_RELEASE == 'true'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           gh release create $CURRENT_TAG ./setup/empires-setup.exe \
-            --title "$VERSION" \
+            --title "$CURRENT_TAG" \
             --notes-file release-notes.md \
             --draft   
 
       - name: Create nightly release
-        if: github.event_name == 'push' && (env.BRANCH == 'main' || env.BRANCH == 'master')  && env.TAG_SEMANTIC_RELEASE != true
+        if: github.event_name == 'push' && (env.BRANCH == 'main' || env.BRANCH == 'master')  && env.TAG_SEMANTIC_RELEASE != 'true'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
@@ -503,7 +505,7 @@ jobs:
             --prerelease    
 
       - name: Create preview branch release
-        if: github.event_name == 'push' && (env.BRANCH != 'main' && env.BRANCH != 'master')  && env.TAG_SEMANTIC_RELEASE != true
+        if: github.event_name == 'push' && (env.BRANCH != 'main' && env.BRANCH != 'master')  && env.TAG_SEMANTIC_RELEASE != 'true'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |

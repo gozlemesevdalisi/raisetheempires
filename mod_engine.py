@@ -1,3 +1,4 @@
+import json
 import os
 from pathlib import Path
 
@@ -36,13 +37,45 @@ def is_json_patch(file_name):
     return os.path.splitext(file_name)[1] == ".jsonpatch"
 
 
+def to_bytes(content):
+    return content.encode("utf-8") if isinstance(content, str) else content
+
+
 def apply_mod(source, mod_file, name):
     if is_xml_diff(name):
-        return lambda: patch_text(read_file(mod_file), source())
+        return lambda: to_bytes(patch_text(read_file(mod_file).decode("utf-8"), source()))
     elif is_json_patch(name):
-        return lambda: apply_patch(read_file(mod_file), source())
+        return lambda: json.dumps(apply_patch(json.loads(source()), json.loads(read_file(mod_file)))).encode("utf-8")
     else:
         return lambda: read_file(mod_file)
+
+
+def original_file(relative_path):
+    # mod paths are relative to the game folders, the my games folder takes precedence (e.g. converted settings)
+    for folder in (my_games_path(), install_path()):
+        candidate = os.path.join(folder, relative_path)
+        if os.path.exists(candidate):
+            return candidate
+    return os.path.join(install_path(), relative_path)
+
+
+def lookup(path):
+    """Returns the mod key for an absolute or folder-joined path, or None when the file isn't modded."""
+    if not mod:
+        return None
+    for folder in (install_path(), my_games_path()):
+        relative_path = os.path.relpath(os.path.abspath(path), os.path.abspath(folder))
+        if not relative_path.startswith(".."):
+            key = Path(relative_path).as_posix()
+            if key in mod:
+                return key
+    return None
+
+
+def load(path):
+    """Returns the modded content of path as bytes, or None when the file isn't modded."""
+    key = lookup(path)
+    return mod[key]() if key is not None else None
 
 
 def get_cache_filename(original_path):
@@ -82,7 +115,7 @@ for mod_folder in mod_folders:
                                 print(" | - source_file " + source_file)
                                 print(" | - mod_file " + mod_file)
 
-                                source = mod.get(source_file, lambda: read_file(source_file))  # lambda chaining
+                                source = mod.get(source_file, lambda source_file=source_file: read_file(original_file(source_file)))  # lambda chaining
                                 mod[source_file] = apply_mod(source, mod_file, name)
 
                                 stats = os.stat(mod_file)
@@ -99,7 +132,7 @@ if settings.caching:
     except OSError as error:
         print(error)
         print("WARNING: cache directory can't be created in ", my_games_path(), ", caching is disabled, this may decrease performance and increase loading times.")
-        caching = False
+        settings.caching = False
 else:
     print("WARNING: caching is disabled by choice, this may decrease performance and increase loading times.")
 
@@ -144,7 +177,7 @@ if settings.caching:
     if settings.caching:
         for path in sorted(mod):
             if os.path.exists(os.path.join(cache_path, get_cache_filename(path))):
-                mod[path] = lambda: read_file(os.path.join(cache_path, get_cache_filename(path)))
+                mod[path] = lambda path=path: read_file(os.path.join(cache_path, get_cache_filename(path)))
             else:
                 print('ERROR: Cache miss, Cache file %s missing for original %s. ' % (get_cache_filename(path), path))
                 print("This may decrease performance and increase loading times.")
