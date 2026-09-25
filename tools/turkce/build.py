@@ -32,6 +32,10 @@ TAG = re.compile(r"<[^<>]+>")
 ASCII = str.maketrans("şŞğĞİ", "sSgGI")
 
 
+def strip_article(name):
+    return re.sub(r"^(a|an|some|the) ", "", name, flags=re.IGNORECASE).lower()
+
+
 def token_name(token):
     return re.split(r"[,\s}]", token[1:], 1)[0]
 
@@ -138,7 +142,7 @@ def build(ascii_only=False, check_only=False):
                 menu_key = key[:-len("_sentenceName")] + "_menuName"
                 menu_english = english_by_key.get((package_name, menu_key))
                 menu_turkish = entries.get(menu_key) or memory.get(menu_english)
-                if menu_turkish and re.sub(r"^(a|an|some) ", "", english) == menu_english:
+                if menu_turkish and strip_article(english) == strip_article(menu_english):
                     turkish = menu_turkish
             if turkish is None and english.strip() and not TOKEN.sub("", english).strip(" ,.:!?-"):
                 turkish = english  # only placeholders, nothing to translate

@@ -6,12 +6,11 @@ only strings) are skipped.
 Usage: python tools/turkce/dump.py Package [start] [count]
 """
 import os
-import re
 import sys
 import xml.etree.ElementTree as ET
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from build import SOURCE, TOKEN, load_translations, same_markup  # noqa: E402
+from build import SOURCE, TOKEN, load_translations, same_markup, strip_article  # noqa: E402
 
 
 def main():
@@ -37,7 +36,7 @@ def main():
             continue
         if key.endswith("_sentenceName"):
             menu_english = english_by_key.get((package_name, key[:-len("_sentenceName")] + "_menuName"))
-            if menu_english is not None and re.sub(r"^(a|an|some) ", "", english) == menu_english:
+            if menu_english is not None and strip_article(english) == strip_article(menu_english):
                 continue
         seen.add(english)
         pending.append((key, english))
