@@ -1,0 +1,11 @@
+top_part_send_text = Arkadaşlarınızdan {part,object,plural} isteyin!
+select_friends = Bu parçayı istemek istediğiniz arkadaşlarınızı seçin:
+send_part = Parça Gönder
+part = Parça
+PendingBuildingPartRequests = Yanıt bekleyen başka isteğiniz var mı?
+AcceptPartRequestReminder = Lütfen her isteği hemen yanıtlamayı unutmayın.
+RequestAnswered = {user} kişisine {count} {part,object,count} verdiniz.
+RequestAnswered_V2 = {user,name} kişisine {part,object,indefinite,singular} gönderdiniz - ve bir tane de siz kazandınız!
+AllFriends = Tüm Arkadaşlar
+RecommendedFriends = Önerilen Arkadaşlar
+ZyngaFriends = Zynga Arkadaşları

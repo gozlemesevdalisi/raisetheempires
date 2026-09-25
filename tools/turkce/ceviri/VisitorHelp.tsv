@@ -1,0 +1,6 @@
+VisitorHelpOutOfEnergyMessage = Burada daha fazla iş yapılamaz. Yarın tekrar gelin.
+VisitorHelpOutOfEnergyTitle = Üzgünüz!
+VisitorHelpRepeat_revive = Ekinler zaten canlandırıldı
+VisitorHelpRepeat_tax = Kira zaten toplandı
+VisitorHelpRepeat_speedup = Zaten hızlandırıldı
+VisitorHelpSpeedupProgressBarText = Hızlandırılıyor (%{percent})
