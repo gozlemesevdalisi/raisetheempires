@@ -110,7 +110,7 @@ def build(ascii_only=False, check_only=False):
     for package, entries in translations.items():
         for key, text in entries.items():
             english = english_by_key.get((package, key))
-            if english is not None and "#" not in key and english not in memory and same_markup(english, text):
+            if english is not None and "#" not in key and text.strip() and english not in memory and same_markup(english, text):
                 memory[english] = text
 
     coverage = collections.Counter()
