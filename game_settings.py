@@ -13,6 +13,7 @@ from save_engine import my_games_path, validate_save
 game_settings_path = os.path.join(my_games_path(), "gamesettings-converted.json")
 initial_island_path = os.path.join(my_games_path(), "allies/initial-island.json")
 cached_urls = []
+cached_workers_yield = None
 
 def read_games_settings():
     with open(game_settings_path, 'r') as f:
@@ -24,10 +25,15 @@ def read_initial_island():
         return json.load(f)
 
 
-game_settings = json.loads(mod_engine.mod.get(game_settings_path)()) if game_settings_path in mod_engine.mod else read_games_settings()
+def load_json(path, reader):
+    modded = mod_engine.load(path)
+    return json.loads(modded) if modded is not None else reader()
+
+
+game_settings = load_json(game_settings_path, read_games_settings)
 print("Gamesettings loaded: ",  len(game_settings['settings']), " setting sections loaded")
 
-initial_island = json.loads(mod_engine.mod.get(initial_island_path)()) if initial_island_path in mod_engine.mod else read_initial_island()
+initial_island = load_json(initial_island_path, read_initial_island)
 print("Initial island template", len(initial_island["objects"]), "objects loaded", len(initial_island["roads"]),
       "roads loaded")
 # game_objects = [o for o in game_objects_2 if int(o["position"].split(",")[0]) > 62 and int(o["position"].split(",")[1]) > 58]
@@ -47,9 +53,22 @@ for key in allies.keys():
     print(" * ", key, ":", wName, " --> ", str(len(ally["objects"]) if ally["objects"] else 0), "objects, ", str(len(ally["roads"]) if ally["roads"] else 0), "roads")
 
 
+def build_index(elements, key):
+    index = {}
+    for e in elements:
+        index.setdefault(e.get(key), []).append(e)
+    return index
+
+
+# lookups by name/code are done very often, index them once instead of scanning ~4000 items every time
+items_by_name = build_index(game_settings['settings']['items']['item'], '-name')
+items_by_code = build_index(game_settings['settings']['items']['item'], '-code')
+state_machines_by_name = build_index(game_settings['settings']['stateMachines']['stateMachine'], '-name')
+
+
 def lookup_item_by_name(item_name):
     try:
-        [item] = [e for e in game_settings['settings']['items']['item'] if e['-name'] == item_name]
+        [item] = items_by_name.get(item_name, [])
         return item
     except ValueError as e:
         print("ERROR: Could not look up item by name", item_name)
@@ -58,7 +77,7 @@ def lookup_item_by_name(item_name):
 
 def lookup_item_by_code(code):
     try:
-        [item] = [e for e in game_settings['settings']['items']['item'] if e['-code'] == code]
+        [item] = items_by_code.get(code, [])
         return item
     except ValueError as e:
         print("ERROR: Could not look up item by code", code)
@@ -90,8 +109,15 @@ def lookup_items_by_unit_class(unit_class):
 
 
 def lookup_yield():  #TODO buildstate
-    yields = {e['-name']: int(e['yield']['-workers']) for e in lookup_items_with_workers_yield()}
-    return sum([yields[e['itemName']] for e in session['user_object']["userInfo"]["world"]["objects"] if e['itemName'] in yields.keys()])
+    yields = workers_yield()
+    return sum(yields[e['itemName']] for e in session['user_object']["userInfo"]["world"]["objects"] if e['itemName'] in yields)
+
+
+def workers_yield():
+    global cached_workers_yield
+    if cached_workers_yield is None:
+        cached_workers_yield = {e['-name']: int(e['yield']['-workers']) for e in lookup_items_with_workers_yield()}
+    return cached_workers_yield
 
 
 def lookup_visitor_reward(reward_name):
@@ -155,7 +181,7 @@ def lookup_state_machine(state_machine_name, custom_values, custom_reference_val
 
 def lookup_raw_state_machine(state_machine_name):
     try:
-        [state_machine] = [e for e in game_settings['settings']['stateMachines']['stateMachine'] if e['-name'] == state_machine_name]
+        [state_machine] = state_machines_by_name.get(state_machine_name, [])
         return state_machine
     except ValueError as e:
         print("ERROR: Could not look up state machine by name", state_machine_name)
@@ -220,7 +246,7 @@ def relock_expansion(index):
     expansions[i] = expansions[i] & ~(1 << e)
 
 def random_image():
-    return random.choice(list(set([u for u in fetch_urls() if u.endswith('.png')])))
+    return random.choice(sorted({u for u in fetch_urls() if u.endswith('.png')}))
 
 def fetch_urls():
     global cached_urls

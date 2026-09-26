@@ -13,3 +13,5 @@
 .coverage
 coverage.xml
 test-results.xml
+__pycache__/
+*.pyc

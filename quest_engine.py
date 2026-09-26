@@ -17,8 +17,13 @@ def merge_quest_progress(qc, output_list, label):
         print(label + " list after merge " + repr (output_list))
 
 
+quests_by_name = {}
+for quest_setting in quest_settings['quests']['quest']:
+    quests_by_name.setdefault(quest_setting['_name'], []).append(quest_setting)
+
+
 def lookup_quest(name):
-    quests = [r for r in quest_settings['quests']['quest'] if r['_name'] == name]
+    quests = quests_by_name.get(name, [])
     return quests[0] if len(quests) == 1 else None
 
 
@@ -494,7 +499,7 @@ def do_rewards(label, raw_rewards, meta, inc_modifier=lambda a: a, item_modifier
     levels_count = 0
     levels = [level for level in game_settings['settings']['levels']['level'] if int(level["-num"]) > player['level'] and int(level["-requiredXP"]) <= player['xp']    ]
     for level in levels:
-        [energy_cap] = [e['-cap'] for e in game_settings['settings']['energycaps']['energycap'] if e['-level'] == level["-num"]]
+        energy_cap = ([e['-cap'] for e in game_settings['settings']['energycaps']['energycap'] if e['-level'] == level["-num"]] + [46])[0]
         print("Level increased to", level["-num"], "New energy:", energy_cap)
         player['level'] = int(level["-num"])
         player['energy'] = int(energy_cap)
@@ -595,7 +600,7 @@ def roll_reward_random_between(a, b):
 
 def progress_harvest_consumable(state, state_machine, game_item, step, previous_state, reference_item, previous_reference_item, *state_args):
     return lambda task, progress, i, *args: \
-        task["_action"] in "inventoryAdded" and state.get("-harvestingState") == "1" and reference_item is not None and (
+        task["_action"] == "inventoryAdded" and state.get("-harvestingState") == "1" and reference_item is not None and (
                 progress_parameter_implies("_type", lookup_item_by_code(reference_item.split(":")[0]).get("-type",""))(task, progress, i, *args) and \
                 progress_parameter_implies("_subtype", lookup_item_by_code(reference_item.split(":")[0]).get("-subtype",""))(task, progress, i, *args) and \
                 progress_parameter_implies_contains("_item", reference_item.split(":")[0])(task, progress, i, *args)) \

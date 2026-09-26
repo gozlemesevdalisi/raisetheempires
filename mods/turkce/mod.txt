@@ -1,0 +1,2 @@
+Türkçe çeviri / Turkish translation
+Built from tools/turkce/ceviri with: python tools/turkce/build.py

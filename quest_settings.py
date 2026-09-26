@@ -15,7 +15,8 @@ def simple_list(raw_list):
 
 print("Loading Quest settings")
 quest_settings_path = os.path.join(my_games_path(), "questsettings-converted.json")
-quest_settings = json.loads(mod_engine.mod.get(quest_settings_path)()) if quest_settings_path in mod_engine.mod else read_quest_settings()
+quest_settings_mod = mod_engine.load(quest_settings_path)
+quest_settings = json.loads(quest_settings_mod) if quest_settings_mod is not None else read_quest_settings()
 print("Loading sequels")
 sequels = { q["_name"]:[t["_name"] for s in simple_list(q["sequels"]) for t in simple_list(s["sequel"])] for q in quest_settings['quests']['quest']}
 print("Loading prequels")

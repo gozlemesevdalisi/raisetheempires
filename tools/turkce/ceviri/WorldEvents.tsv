@@ -1,0 +1,4 @@
+WorldEvent01_title = Titan İstilası
+WorldEvent01_desc = KALAN TİTANLAR: {remaining} / {total}
+WorldEvent01Popup_title = Titan İstilası Başladı!
+WorldEvent01Popup_desc = Komutanım, Titanlar Dünya'yı ele geçirmeye geldi! Bu istilayı püskürtüp yuvalarımızı korumak için adanıza saldıran Titanı yok edin!

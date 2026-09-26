@@ -46,14 +46,33 @@ def lookup_objects_save_by_position(save, x, y, r):
             y <= int(e["position"].split(",")[1]) <= (y + r)]
 
 
+# Every backup contains the previous one, without a limit the save (which is (de)serialized on every request) keeps
+# growing with every level up, quest unlock, edit, ...
+MAX_BACKUPS = 25
+
+
 def create_backup(message):
     timestamp = datetime.now().timestamp()
-    session["backup"] = copy.deepcopy({k: v for k, v in session.items() if
-                         k in ['user_object', 'quests', 'battle', 'fleets', 'population', 'saved', 'saved_on',
-                               'save_version', 'original_save_version', 'backup']})  # nested backups
+    backup = copy.deepcopy({k: v for k, v in session.items() if
+                            k in ['user_object', 'quests', 'battle', 'fleets', 'population', 'saved', 'saved_on',
+                                  'save_version', 'original_save_version']})
+    if "backup" in session:
+        backup["backup"] = session["backup"]  # nested backups, older backups aren't modified so no need to copy them
+    trim_backups(backup, MAX_BACKUPS)
+    session["backup"] = backup
     session['saved_on'] = timestamp
     session["backup"]['replaced_on'] = timestamp
     session["backup"]['message'] = message
+
+
+def trim_backups(backup, max_backups):
+    depth = 1
+    while isinstance(backup, dict) and "backup" in backup:
+        if depth >= max_backups:
+            del backup["backup"]
+            break
+        backup = backup["backup"]
+        depth += 1
 
 def save_database_uri(root_path, instance_path):
     save_db_path = os.path.join(my_games_path(), "save.db")
@@ -75,6 +94,7 @@ def save_database_uri(root_path, instance_path):
                 print("WARNING: You have a save.db in both the root as the instance folder (when running from source), only the instance one will be used!")
         save_db_path = new_save_db_path
 
+    os.makedirs(os.path.dirname(os.path.abspath(save_db_path)), exist_ok=True)  # sqlite can't create the folder
     print("SQLITE", f"sqlite:///{save_db_path}")
 
     return f"sqlite:///{save_db_path}"
@@ -164,8 +184,12 @@ def store_session(save):
     sess_model = sess_int.sql_session_model
     record = sess_model.query.filter_by(
             session_id=save["session_id"]).first()
+    if record is None:
+        print("WARNING: Save", save["session_id"], "no longer exists, can't store changes to it")
+        return
 
-    record.data = pickle.dumps(dict(save))
+    save = {k: v for k, v in save.items() if k != "session_id"}
+    record.data = sess_int.serializer.encode(save)
     sess_int.db.session.commit()
 
 

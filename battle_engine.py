@@ -493,7 +493,7 @@ def init_battle(params):
                                          in active_consumables if target[0] == "ally"]
                 session["battle"] = (friendly_strengths, baddie_strengths, active_consumables, battle_context)
         return friendlies, friendly_strengths, baddies, baddie_strengths, active_consumables
-    except Exception as ex:
+    except Exception:
         # requires python >=3.11
         # ex.add_note(f"Registered fleets: { repr(session.get('fleets')) }")
         # ex.add_note(f"Battle: { repr(session.get('battle')) }")
@@ -666,7 +666,8 @@ def next_campaign_response(params):
     if not has_battle():
         session["battle"] = (None, None, None, battle_context)
     else:
-        session["battle"][3] = battle_context
+        # the battle is a tuple when created in this request, only a list after a session round trip
+        session["battle"] = tuple(session["battle"][:3]) + (battle_context,)
 
     return next_campaign_response
 
@@ -889,7 +890,7 @@ def assign_consumable_response(params):
                         level = neighbor["level"]
         valid_consumables = [c for c in consumables if "-secondary" not in c and \
                              int(c.get("requiredLevel", "0")) <= level and \
-                             (damaged or c["consumable"].get("-target") == 'enemy' or c["consumable"].get("-target") == 'enemy' or int(c["consumable"].get("-di","0")) >= 0) and \
+                             (damaged or c["consumable"].get("-target") == 'enemy' or int(c["consumable"].get("-di","0")) >= 0) and \
                              'requiredDate' not in c and \
                              c["consumable"].get("-allypower", "true") != "false"]
 
@@ -1094,8 +1095,6 @@ def apply_consumable_direct_impact(meta, selected_consumable, targeted_unit, uni
 
 
 def get_adjacent_factor(unit_1, unit_2, count):
-    print(type(unit_1))
-    print(type(unit_2))
     if unit_1 == unit_2 or count == 1:
         return 0
     elif count == 2:
@@ -1106,6 +1105,8 @@ def get_adjacent_factor(unit_1, unit_2, count):
         return [[0,4,0,0],[4,0,3,0],[0,4,0,3],[0,0,4,0]][unit_1][unit_2]
     elif count == 5:
         return [[0,4,3,0,0],[4,0,3,2,0],[4,3,0,2,1],[0,4,3,0,2],[0,0,4,3,0]][unit_1][unit_2]
+    else:
+        return 4 if abs(unit_1 - unit_2) == 1 else 0  # no known table for larger fleets, only hit direct neighbours
 
 
 def consumable_target_matches(consumable_target, target):
